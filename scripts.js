@@ -1,3 +1,5 @@
+let stockChart;
+
 // Слушаем нажатие кнопки "Получить анализ"
 document.getElementById('get-analysis').addEventListener('click', async function () {
     const ticker = document.getElementById('stock-ticker').value.trim();
@@ -18,6 +20,9 @@ document.getElementById('get-analysis').addEventListener('click', async function
     document.getElementById('change').textContent = `Изменение: ${stockData.change}`;
     document.getElementById('news').textContent = `Новости: ${stockNews}`;
 
+    // Обновляем график
+    updateChart(stockData.timeSeries);
+
     // Получаем прогноз (совет по акции)
     const advice = getAdvice(stockData, stockNews);
     document.getElementById('advice').querySelector('p').textContent = advice;
@@ -26,46 +31,47 @@ document.getElementById('get-analysis').addEventListener('click', async function
 // Функция для получения данных о стоимости акций
 async function getStockData(ticker) {
     const apiKey = 'B2OKB1P8E89ERAL9'; // Ваш API-ключ от Alpha Vantage
-    const url = `https://www.alphavantage.co/query?function=TIME_SERIES_INTRAD
-let stockChart;
+    const url = `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${ticker}&interval=5min&apikey=${apiKey}`;
 
-async function updateChart(data) {
-    const labels = data.map(item => item.time);
-    const prices = data.map(item => item.price);
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
 
-    if (stockChart) {
-        stockChart.destroy(); // Удаляем старый график перед созданием нового
-    }
+        if (data['Time Series (5min)']) {
+            const latestData = data['Time Series (5min)'];
+            const timeSeries = Object.keys(latestData).map(time => ({
+                time: time,
+                price: parseFloat(latestData[time]['4. close'])
+            }));
 
-    const ctx = document.getElementById('stock-chart').getContext('2d');
-    stockChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Цена акции',
-                data: prices,
-                borderColor: '#4CAF50',
-                fill: false,
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Время'
-                    }
-                },
-                y: {
-                    title: {
-                        display: true,
-                        text: 'Цена'
-                    },
-                    beginAtZero: false
-                }
-            }
+            return {
+                price: `$${timeSeries[timeSeries.length - 1].price}`,
+                change: calculateChange(timeSeries[timeSeries.length - 1].price),
+                timeSeries: timeSeries
+            };
+        } else {
+            throw new Error('Ошибка получения данных о акции');
         }
-    });
+    } catch (error) {
+        console.error('Ошибка запроса:', error);
+        return { price: 'Ошибка', change: 'Ошибка', timeSeries: [] };
+    }
 }
+
+// Функция для расчета изменения цены
+function calculateChange(price) {
+    const firstPrice = 150; // Пример стартовой цены (можно сделать динамичной)
+    const change = ((price - firstPrice) / firstPrice) * 100;
+    return `${change.toFixed(2)}%`;
+}
+
+// Функция для получения новостей о компании
+async function getStockNews(ticker) {
+    return `Новости о компании ${ticker}...`;
+}
+
+// Функция для рекомендаций на основе данных о стоимости акции
+function getAdvice(stockData, stockNews) {
+    if (parseFloat(stockData.change) > 0) {
+        return 'Рекомендуем покупать!';
+    } else {
