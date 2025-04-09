@@ -3,26 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Анализ акций</title>
+    <title>Stock Analysis</title>
+    <style>
+        /* Общие стили */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            flex-direction: column;
+        }
+
+        /* Контейнер */
+        .container {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            transition: all 0.3s ease; /* Плавное изменение */
+        }
+
+        /* Ввод */
+        input {
+            width: 80%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+            transition: all 0.3s ease; /* Плавное изменение */
+        }
+
+        input:focus {
+            border-color: #4CAF50; /* Изменение цвета при фокусе */
+            outline: none;
+        }
+
+        /* Кнопка */
+        button {
+            padding: 12px;
+            width: 80%;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease; /* Плавное изменение фона */
+        }
+
+        /* Эффект наведения на кнопку */
+        button:hover {
+            background-color: #45a049;
+        }
+
+        /* Результаты */
+        #results p {
+            font-size: 18px;
+            margin: 8px 0;
+        }
+
+        /* Рекомендации */
+        #advice {
+            margin-top: 20px;
+            font-weight: bold;
+            color: #ff5722;
+            font-size: 18px;
+        }
+
+        /* Адаптивность для мобильных устройств */
+        @media (max-width: 600px) {
+            .container {
+                width: 95%;
+                padding: 15px;
+            }
+
+            input, button {
+                width: 100%;
+                padding: 12px;
+            }
+        }
+
+        /* Добавление анимации для загрузки */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Применение анимации для отображения результатов */
+        #results, #advice {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+    </style>
 </head>
 <body>
-    <h1>Цена акции и анализ</h1>
-    <div>
+    <h1>Stock Price and Analysis</h1>
+    <div class="container">
         <label for="stock-ticker">Введите тикер акции:</label>
         <input type="text" id="stock-ticker" placeholder="AAPL">
         <button id="get-analysis">Получить анализ</button>
-    </div>
-    <div>
-        <p id="price">Цена: </p>
-        <p id="change">Изменение: </p>
-        <p id="news">Новости: </p>
+
+        <div id="results">
+            <p id="price">Цена: </p>
+            <p id="change">Изменение: </p>
+            <p id="news">Новости: </p>
+        </div>
+
         <div id="advice">
             <p>Рекомендации: </p>
         </div>
     </div>
 
     <script>
-        // Слушаем нажатие кнопки
+        // Слушаем нажатие кнопки "Получить анализ"
         document.getElementById('get-analysis').addEventListener('click', async function () {
             const ticker = document.getElementById('stock-ticker').value.trim();
             if (!ticker) return alert('Введите тикер акции!');
@@ -31,18 +135,12 @@
             const stockData = await getStockData(ticker);
             const stockNews = await getStockNews(ticker);
 
-            // Если данные получены с ошибкой
-            if (stockData.price === 'Ошибка') {
-                alert('Не удалось получить данные о акции');
-                return;
-            }
-
-            // Отображаем информацию
+            // Отображаем информацию на странице
             document.getElementById('price').textContent = `Цена: ${stockData.price}`;
             document.getElementById('change').textContent = `Изменение: ${stockData.change}`;
             document.getElementById('news').textContent = `Новости: ${stockNews}`;
 
-            // Получаем прогноз
+            // Получаем прогноз (совет по акции)
             const advice = getAdvice(stockData, stockNews);
             document.getElementById('advice').querySelector('p').textContent = advice;
         });
@@ -51,12 +149,6 @@
         async function getStockData(ticker) {
             const apiKey = 'B2OKB1P8E89ERAL9'; // Ваш API-ключ от Alpha Vantage
             const url = `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${ticker}&interval=5min&apikey=${apiKey}`;
-
-            // Проверяем кэш
-            const cachedData = localStorage.getItem(ticker);
-            if (cachedData) {
-                return JSON.parse(cachedData);
-            }
 
             try {
                 const response = await fetch(url);
@@ -67,27 +159,22 @@
                     const latestTime = Object.keys(latestData)[0];
                     const price = latestData[latestTime]['4. close'];
 
-                    const stockData = {
+                    return {
                         price: `$${price}`,
                         change: calculateChange(price)
                     };
-
-                    // Сохраняем данные в localStorage
-                    localStorage.setItem(ticker, JSON.stringify(stockData));
-
-                    return stockData;
                 } else {
                     throw new Error('Данные по акции не найдены.');
                 }
             } catch (error) {
                 console.error('Ошибка запроса:', error);
-                return { price: 'Ошибка', change: 'Ошибка' };
+                return { price: 'Ошибка', change: 'Ошибка', message: error.message };
             }
         }
 
         // Функция для расчета изменения цены
         function calculateChange(price) {
-            const firstPrice = 150; // Пример стартовой цены
+            const firstPrice = 150; // Пример стартовой цены (можно сделать динамичной)
             const change = ((price - firstPrice) / firstPrice) * 100;
             return `${change.toFixed(2)}%`;
         }
@@ -99,7 +186,7 @@
             return `Новости о компании ${ticker}...`;
         }
 
-        // Логика для рекомендаций на основе данных
+        // Логика для рекомендаций на основе данных о стоимости акции и новостей
         function getAdvice(stockData, stockNews) {
             if (parseFloat(stockData.change) > 0) {
                 return 'Рекомендуем покупать!';
