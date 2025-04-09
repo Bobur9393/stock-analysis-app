@@ -27,3 +27,45 @@ document.getElementById('get-analysis').addEventListener('click', async function
 async function getStockData(ticker) {
     const apiKey = 'B2OKB1P8E89ERAL9'; // Ваш API-ключ от Alpha Vantage
     const url = `https://www.alphavantage.co/query?function=TIME_SERIES_INTRAD
+let stockChart;
+
+async function updateChart(data) {
+    const labels = data.map(item => item.time);
+    const prices = data.map(item => item.price);
+
+    if (stockChart) {
+        stockChart.destroy(); // Удаляем старый график перед созданием нового
+    }
+
+    const ctx = document.getElementById('stock-chart').getContext('2d');
+    stockChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Цена акции',
+                data: prices,
+                borderColor: '#4CAF50',
+                fill: false,
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Время'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Цена'
+                    },
+                    beginAtZero: false
+                }
+            }
+        }
+    });
+}
