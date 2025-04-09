@@ -39,3 +39,37 @@ function getAdvice(stockData, stockNews) {
         return 'Рекомендуем продавать!';
     }
 }
+// Функция для получения данных о стоимости акций
+async function getStockData(ticker) {
+    const apiKey = 'YOUR_API_KEY'; // B2OKB1P8E89ERAL9
+    const url = `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${ticker}&interval=5min&apikey=${apiKey}`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data['Time Series (5min)']) {
+            // Берем последние данные
+            const latestData = data['Time Series (5min)'];
+            const latestTime = Object.keys(latestData)[0];
+            const price = latestData[latestTime]['4. close'];
+
+            return {
+                price: `$${price}`,
+                change: calculateChange(price) // Функция для расчета изменения цены
+            };
+        } else {
+            throw new Error('Ошибка получения данных о акции');
+        }
+    } catch (error) {
+        console.error('Ошибка запроса:', error);
+        return { price: 'Ошибка', change: 'Ошибка' };
+    }
+}
+
+// Функция для расчета изменения цены
+function calculateChange(price) {
+    const firstPrice = 150; // Это пример стартовой цены (можно сделать динамичным)
+    const change = ((price - firstPrice) / firstPrice) * 100;
+    return `${change.toFixed(2)}%`;
+}
