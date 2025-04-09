@@ -1,40 +1,41 @@
-( function( $ ) {
-    $(document).ready(function (){
-      
-      // Live Search
-        $('#live-search-faux-input').on('click', function() {
-            $('.live-search-modal').fadeIn(500);
-            $('input#live-search-input').focus();
-            $('#live-search-input').addClass('live-search-to-show');
-        });
-        $('input#live-search-input').on('input', function() {
-            if ( this.value.length >= 3 ) {
-                $.ajax({
-                    url: live_search.ajax_url, // use the globally declared variable
-                    type: 'POST',
-                    data: {
-                        action: 'live_search', // Call the PHP function
-                        keyword: $('#live-search-input').val()
-                    },
-                    success: function(data) {
-                        $('.live-search-reset-btn').fadeIn(500);
-                        $('.live-search-results').delay(500).slideDown(400).html(data);
-                        $('.live-search-result').each(function(index) {
-                            $(this).delay(500*index).fadeTo(400, 1);
-                        });
-                    }
-                });
-            } else {
-                $('.live-search-results').html('');
-            }
-        });
-        $('.live-search-reset-btn').on('click', function() {
-            $('.live-search-results').html('').slideUp();
-        });
-        $('.live-search-close').on('click', function() {
-            $('.live-search-modal').fadeOut(500);
-            $('#live-search-input').removeClass('live-search-to-show').val('');
-        });
-      
-    });
-} )( jQuery );
+document.getElementById('get-analysis').addEventListener('click', async function () {
+    const ticker = document.getElementById('stock-ticker').value.trim();
+    if (!ticker) return alert('Введите тикер акции!');
+
+    // Пример запроса к API для получения данных о стоимости акции
+    const stockData = await getStockData(ticker);
+    const stockNews = await getStockNews(ticker);
+
+    // Отображение информации
+    document.getElementById('price').textContent = `Цена: ${stockData.price}`;
+    document.getElementById('change').textContent = `Изменение: ${stockData.change}`;
+    document.getElementById('news').textContent = `Новости: ${stockNews}`;
+
+    // Прогноз
+    const advice = getAdvice(stockData, stockNews);
+    document.getElementById('advice').querySelector('p').textContent = advice;
+});
+
+async function getStockData(ticker) {
+    // Здесь ты можешь использовать API для получения актуальных данных о стоимости акции
+    // Пример возвращаемых данных
+    return {
+        price: '$150.00',
+        change: '+1.5%'
+    };
+}
+
+async function getStockNews(ticker) {
+    // Здесь ты можешь использовать API для получения новостей о компании
+    // Пример возвращаемых данных
+    return 'Новости о компании...';
+}
+
+function getAdvice(stockData, stockNews) {
+    // Логика для рекомендаций на основе данных
+    if (stockData.change > 0) {
+        return 'Рекомендуем покупать!';
+    } else {
+        return 'Рекомендуем продавать!';
+    }
+}
