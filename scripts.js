@@ -27,24 +27,23 @@ async function getStockData(ticker) {
         const data = await response.json();
 
         if (data['Time Series (5min)']) {
-            // Получаем последние данные о цене
             const latestData = data['Time Series (5min)'];
             const latestTime = Object.keys(latestData)[0];
             const price = latestData[latestTime]['4. close'];
 
-            // Возвращаем цену и изменение
             return {
                 price: `$${price}`,
                 change: calculateChange(price)
             };
         } else {
-            throw new Error('Ошибка получения данных о акции');
+            throw new Error('Данные по акции не найдены.');
         }
     } catch (error) {
         console.error('Ошибка запроса:', error);
-        return { price: 'Ошибка', change: 'Ошибка' };
+        return { price: 'Ошибка', change: 'Ошибка', message: error.message };
     }
 }
+
 
 // Функция для расчета изменения цены
 function calculateChange(price) {
