@@ -4,6 +4,11 @@ document.getElementById('get-analysis').addEventListener('click', async function
     const ticker = document.getElementById('stock-ticker').value.trim().toUpperCase();
     if (!ticker) return alert('Введите тикер акции!');
 
+    // Показываем индикатор загрузки
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('advice').style.display = 'none';
+    document.getElementById('loading').style.display = 'block';
+
     try {
         const stockData = await getStockData(ticker);
         const stockNews = await getStockNews(ticker);
@@ -23,6 +28,9 @@ document.getElementById('get-analysis').addEventListener('click', async function
 
     } catch (error) {
         alert(`Ошибка: ${error.message}`);
+    } finally {
+        // Скрываем индикатор загрузки
+        document.getElementById('loading').style.display = 'none';
     }
 });
 
@@ -69,52 +77,4 @@ function updateChart(stockData) {
     if (stockChart) stockChart.destroy();
 
     const ctx = document.getElementById('stock-chart').getContext('2d');
-    stockChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: times,
-            datasets: [{
-                label: 'Цена акций',
-                data: prices,
-                borderColor: '#4CAF50',
-                borderWidth: 2,
-                fill: false,
-                tension: 0.1
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: true,
-                    labels: {
-                        color: '#333'
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Время'
-                    }
-                },
-                y: {
-                    title: {
-                        display: true,
-                        text: 'Цена ($)'
-                    }
-                }
-            }
-        }
-    });
-}
-
-function getAdvice(stockData, stockNews) {
-    const changePercent = parseFloat(stockData.change);
-    let advice = 'Рекомендации: ';
-
-    if (changePercent > 0) {
-        advice += 'Акция растёт 📈 — можно рассмотреть покупку.';
-    } else if (changePercent < 0) {
-        advice += 'Акция падает 📉 — возможно стоит
+    stockChart = new Chart(ctx,
