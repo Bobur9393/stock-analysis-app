@@ -178,7 +178,7 @@
 
         // Функция для получения новостей о компании
         async function getStockNews(ticker) {
-            const url = `https://newsapi.org/v2/everything?q=${ticker}&apiKey=68069bca283d4fb380e0a0a88e800e42`;  // Замените на свой API-ключ от NewsAPI
+            const url = `https://newsapi.org/v2/everything?q=${ticker}&apiKey=68069bca283d4fb380e0a0a88e800e42`;  // Используем твой API-ключ
             const response = await fetch(url);
             const data = await response.json();
 
