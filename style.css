@@ -11,7 +11,6 @@ body {
     flex-direction: column;
 }
 
-/* Контейнер */
 .container {
     background-color: #ffffff;
     padding: 20px;
@@ -19,67 +18,62 @@ body {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     width: 90%;
     max-width: 400px;
-    min-width: 300px;
     text-align: center;
-    transition: all 0.3s ease;
+    transition: transform 0.3s ease;
 }
 
-/* Ввод */
-input {
+.container:hover {
+    transform: translateY(-5px);
+}
+
+input, button {
     width: 80%;
     padding: 12px;
     margin: 10px 0;
     border-radius: 4px;
     border: 1px solid #ddd;
     font-size: 16px;
+    transition: all 0.3s ease;
 }
 
-input:focus {
-    border-color: #4CAF50;
-    outline: none;
-}
-
-/* Кнопка */
 button {
-    padding: 12px;
-    width: 80%;
     background-color: #4CAF50;
     color: white;
-    border: none;
-    border-radius: 4px;
     cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s ease;
+    border: none;
 }
 
-/* Эффект наведения на кнопку */
 button:hover {
     background-color: #45a049;
+    transform: scale(1.05);
 }
 
-/* Результаты */
-#results p {
-    font-size: 18px;
-    margin: 8px 0;
-}
-
-/* Рекомендации */
 #advice {
     margin-top: 20px;
     font-weight: bold;
     color: #ff5722;
     font-size: 18px;
+    transition: color 0.3s ease;
 }
 
-/* График */
-canvas {
+#advice.success {
+    color: #4CAF50; /* Зеленый для положительных советов */
+}
+
+#advice.error {
+    color: #f44336; /* Красный для ошибок или негативных советов */
+}
+
+#stock-chart {
     margin-top: 20px;
-    width: 100% !important;
-    height: 250px !important;
-    max-width: 100%;
+    width: 100%;
+    max-width: 400px;
+    height: 200px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Адаптивность для мобильных устройств */
 @media (max-width: 600px) {
     .container {
         width: 95%;
@@ -88,25 +82,10 @@ canvas {
 
     input, button {
         width: 100%;
-        padding: 12px;
     }
 
-    button {
-        font-size: 18px;
+    #stock-chart {
+        width: 100%;
+        height: 180px;
     }
-}
-
-/* Анимация */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-
-/* Применение анимации для отображения результатов */
-#results, #advice {
-    animation: fadeIn 0.5s ease-in-out;
 }
