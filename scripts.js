@@ -22,31 +22,34 @@ document.getElementById('get-analysis').addEventListener('click', async function
     document.getElementById('advice').querySelector('p').textContent = advice;
 });
 
-// Функция для получения данных о стоимости акций
+// Функция для получения данных о стоимости акций с Yahoo Finance API
 async function getStockData(ticker) {
-    const apiKey = 'YOUR_API_KEY';  // Замените на свой API-ключ от Alpha Vantage
-    const url = `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${ticker}&interval=5min&apikey=${apiKey}`;
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?range=1d&interval=5m`;
     const response = await fetch(url);
     const data = await response.json();
+    
+    if (data.chart.result === undefined) {
+        throw new Error("Акция не найдена");
+    }
 
     // Преобразуем данные для отображения
-    const timeSeries = data['Time Series (5min)'];
-    const latestTime = Object.keys(timeSeries)[0];
-    const latestData = timeSeries[latestTime];
+    const timeSeries = data.chart.result[0].timestamp;
+    const prices = data.chart.result[0].indicators.quote[0].close;
 
-    const price = latestData['4. close'];
-    const change = (parseFloat(latestData['4. close']) - parseFloat(timeSeries[Object.keys(timeSeries)[1]]['4. close'])).toFixed(2);
+    const latestPrice = prices[prices.length - 1];
+    const previousPrice = prices[prices.length - 2];
+    const change = (latestPrice - previousPrice).toFixed(2);
 
     return {
-        price,
+        price: latestPrice,
         change,
-        timeSeries
+        timeSeries: { time: timeSeries, prices }
     };
 }
 
 // Функция для получения новостей о компании
 async function getStockNews(ticker) {
-    const url = `https://newsapi.org/v2/everything?q=${ticker}&apiKey=YOUR_NEWSAPI_KEY`;  // Замените на свой API-ключ от NewsAPI
+    const url = `https://newsapi.org/v2/everything?q=${ticker}&apiKey=68069bca283d4fb380e0a0a88e800e42`;  // Используем твой API-ключ
     const response = await fetch(url);
     const data = await response.json();
 
@@ -56,9 +59,9 @@ async function getStockNews(ticker) {
 }
 
 // Функция для обновления графика
-function updateChart(timeSeries) {
-    const times = Object.keys(timeSeries);
-    const prices = times.map(time => timeSeries[time]['4. close']);
+function updateChart(stockData) {
+    const times = stockData.time.map(time => new Date(time * 1000).toLocaleTimeString());
+    const prices = stockData.prices;
 
     if (stockChart) {
         stockChart.destroy();  // Удаляем старый график
