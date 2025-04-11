@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <canvas id="stock-chart" width="400" height="200"></canvas>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stock Analysis</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* Общие стили */
         body {
@@ -29,7 +28,7 @@
             width: 90%;
             max-width: 400px;
             text-align: center;
-            transition: all 0.3s ease; /* Плавное изменение */
+            transition: all 0.3s ease;
         }
 
         /* Ввод */
@@ -40,11 +39,10 @@
             border-radius: 4px;
             border: 1px solid #ddd;
             font-size: 16px;
-            transition: all 0.3s ease; /* Плавное изменение */
         }
 
         input:focus {
-            border-color: #4CAF50; /* Изменение цвета при фокусе */
+            border-color: #4CAF50;
             outline: none;
         }
 
@@ -58,7 +56,6 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
-            transition: background-color 0.3s ease; /* Плавное изменение фона */
         }
 
         /* Эффект наведения на кнопку */
@@ -93,7 +90,7 @@
             }
         }
 
-        /* Добавление анимации для загрузки */
+        /* Анимация */
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -125,6 +122,8 @@
         <div id="advice">
             <p>Рекомендации: </p>
         </div>
+
+        <canvas id="stock-chart" width="400" height="200"></canvas>
     </div>
 
     <script>
@@ -154,4 +153,72 @@
 
         // Функция для получения данных о стоимости акций
         async function getStockData(ticker) {
-            const apiKey
+            const apiKey = 'YOUR_API_KEY';  // Замените на свой API-ключ от Alpha Vantage
+            const url = `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${ticker}&interval=5min&apikey=${apiKey}`;
+            const response = await fetch(url);
+            const data = await response.json();
+
+            // Преобразуем данные для отображения
+            const timeSeries = data['Time Series (5min)'];
+            const latestTime = Object.keys(timeSeries)[0];
+            const latestData = timeSeries[latestTime];
+
+            const price = latestData['4. close'];
+            const change = (parseFloat(latestData['4. close']) - parseFloat(timeSeries[Object.keys(timeSeries)[1]]['4. close'])).toFixed(2);
+
+            return {
+                price,
+                change,
+                timeSeries
+            };
+        }
+
+        // Функция для получения новостей о компании
+        async function getStockNews(ticker) {
+            const url = `https://newsapi.org/v2/everything?q=${ticker}&apiKey=YOUR_NEWSAPI_KEY`;  // Замените на свой API-ключ от NewsAPI
+            const response = await fetch(url);
+            const data = await response.json();
+
+            // Получаем первые 3 новости
+            const articles = data.articles.slice(0, 3);
+            return articles.map(article => article.title).join(', ');
+        }
+
+        // Функция для обновления графика
+        function updateChart(timeSeries) {
+            const times = Object.keys(timeSeries);
+            const prices = times.map(time => timeSeries[time]['4. close']);
+
+            if (stockChart) {
+                stockChart.destroy();  // Удаляем старый график
+            }
+
+            const ctx = document.getElementById('stock-chart').getContext('2d');
+            stockChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: times,
+                    datasets: [{
+                        label: 'Цена акций',
+                        data: prices,
+                        borderColor: '#4CAF50',
+                        borderWidth: 2,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            type: 'category',
+                            labels: times,
+                            title: {
+                                display: true,
+                                text: 'Время'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Цена'
+                            }
