@@ -1,44 +1,46 @@
 let stockChart;
 
-// Слушаем нажатие кнопки "Получить анализ"
 document.getElementById('get-analysis').addEventListener('click', async function () {
-    const ticker = document.getElementById('stock-ticker').value.trim();
+    const ticker = document.getElementById('stock-ticker').value.trim().toUpperCase();
     if (!ticker) return alert('Введите тикер акции!');
 
-    // Получаем данные акции и новости
-    const stockData = await getStockData(ticker);
-    const stockNews = await getStockNews(ticker);
+    try {
+        const stockData = await getStockData(ticker);
+        const stockNews = await getStockNews(ticker);
 
-    // Отображаем информацию на странице
-    document.getElementById('price').textContent = `Цена: ${stockData.price}`;
-    document.getElementById('change').textContent = `Изменение: ${stockData.change}`;
-    document.getElementById('news').textContent = `Новости: ${stockNews}`;
+        // Показать результаты
+        document.getElementById('results').style.display = 'block';
+        document.getElementById('advice').style.display = 'block';
 
-    // Обновляем график
-    updateChart(stockData.timeSeries);
+        document.getElementById('price').textContent = `Цена: $${stockData.price.toFixed(2)}`;
+        document.getElementById('change').textContent = `Изменение: ${stockData.change}`;
+        document.getElementById('news').textContent = `Новости: ${stockNews}`;
 
-    // Получаем прогноз (совет по акции)
-    const advice = getAdvice(stockData, stockNews);
-    document.getElementById('advice').querySelector('p').textContent = advice;
+        updateChart(stockData.timeSeries);
+
+        const adviceText = getAdvice(stockData, stockNews);
+        document.getElementById('advice').querySelector('p').textContent = adviceText;
+
+    } catch (error) {
+        alert(`Ошибка: ${error.message}`);
+    }
 });
 
-// Функция для получения данных о стоимости акций с Yahoo Finance API
 async function getStockData(ticker) {
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?range=1d&interval=5m`;
     const response = await fetch(url);
     const data = await response.json();
-    
-    if (data.chart.result === undefined) {
-        throw new Error("Акция не найдена");
+
+    if (!data.chart.result) {
+        throw new Error("Акция не найдена.");
     }
 
-    // Преобразуем данные для отображения
     const timeSeries = data.chart.result[0].timestamp;
     const prices = data.chart.result[0].indicators.quote[0].close;
 
     const latestPrice = prices[prices.length - 1];
     const previousPrice = prices[prices.length - 2];
-    const change = (latestPrice - previousPrice).toFixed(2);
+    const change = ((latestPrice - previousPrice) / previousPrice * 100).toFixed(2) + '%';
 
     return {
         price: latestPrice,
@@ -47,25 +49,24 @@ async function getStockData(ticker) {
     };
 }
 
-// Функция для получения новостей о компании
 async function getStockNews(ticker) {
-    const url = `https://newsapi.org/v2/everything?q=${ticker}&apiKey=68069bca283d4fb380e0a0a88e800e42`;  // Используем твой API-ключ
+    const url = `https://newsapi.org/v2/everything?q=${ticker}&apiKey=68069bca283d4fb380e0a0a88e800e42`;
     const response = await fetch(url);
     const data = await response.json();
 
-    // Получаем первые 3 новости
+    if (!data.articles || data.articles.length === 0) {
+        return "Нет свежих новостей.";
+    }
+
     const articles = data.articles.slice(0, 3);
     return articles.map(article => article.title).join(', ');
 }
 
-// Функция для обновления графика
 function updateChart(stockData) {
     const times = stockData.time.map(time => new Date(time * 1000).toLocaleTimeString());
     const prices = stockData.prices;
 
-    if (stockChart) {
-        stockChart.destroy();  // Удаляем старый график
-    }
+    if (stockChart) stockChart.destroy();
 
     const ctx = document.getElementById('stock-chart').getContext('2d');
     stockChart = new Chart(ctx, {
@@ -77,15 +78,22 @@ function updateChart(stockData) {
                 data: prices,
                 borderColor: '#4CAF50',
                 borderWidth: 2,
-                fill: false
+                fill: false,
+                tension: 0.1
             }]
         },
         options: {
             responsive: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: {
+                        color: '#333'
+                    }
+                }
+            },
             scales: {
                 x: {
-                    type: 'category',
-                    labels: times,
                     title: {
                         display: true,
                         text: 'Время'
@@ -94,7 +102,7 @@ function updateChart(stockData) {
                 y: {
                     title: {
                         display: true,
-                        text: 'Цена'
+                        text: 'Цена ($)'
                     }
                 }
             }
@@ -102,18 +110,11 @@ function updateChart(stockData) {
     });
 }
 
-// Функция для получения совета по акции
 function getAdvice(stockData, stockNews) {
-    const change = parseFloat(stockData.change);
+    const changePercent = parseFloat(stockData.change);
     let advice = 'Рекомендации: ';
 
-    if (change > 0) {
-        advice += 'Акция в росте, можно рассмотреть покупку!';
-    } else if (change < 0) {
-        advice += 'Акция падает, рекомендуется подождать!';
-    } else {
-        advice += 'Акция стабильно держится, продолжайте наблюдать!';
-    }
-
-    return advice;
-}
+    if (changePercent > 0) {
+        advice += 'Акция растёт 📈 — можно рассмотреть покупку.';
+    } else if (changePercent < 0) {
+        advice += 'Акция падает 📉 — возможно стоит
