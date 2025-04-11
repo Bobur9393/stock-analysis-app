@@ -5,16 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stock Analysis</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="style.css">
+    <script defer src="scripts.js"></script>
 </head>
 <body>
     <h1>📈 Stock Price and Analysis</h1>
-    <div class="container">
+    <div>
         <label for="stock-ticker">Введите тикер акции:</label>
         <input type="text" id="stock-ticker" placeholder="например, AAPL">
         <button id="get-analysis">Получить анализ</button>
 
-        <!-- Индикатор загрузки -->
         <div id="loading" style="display: none;">Загружаем данные...</div>
 
         <div id="results" style="display: none;">
@@ -29,7 +28,5 @@
 
         <canvas id="stock-chart"></canvas>
     </div>
-
-    <script src="scripts.js"></script>
 </body>
 </html>
