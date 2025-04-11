@@ -1,77 +1,95 @@
+const apiKey = 'demo'; // Заменить на свой ключ
+const stockSymbol = 'AAPL';
+const chart = document.getElementById('stockChart').getContext('2d');
 let stockChart;
+let firstPrice = null;
 
-// Слушаем нажатие кнопки "Получить анализ"
-document.getElementById('get-analysis').addEventListener('click', async function () {
-    const ticker = document.getElementById('stock-ticker').value.trim();
-    if (!ticker) return alert('Введите тикер акции!');
-
-    // Получаем данные акции и новости
-    const stockData = await getStockData(ticker);
-    const stockNews = await getStockNews(ticker);
-
-    // Если возникла ошибка, выводим сообщение
-    if (stockData.price === 'Ошибка') {
-        alert('Не удалось получить данные по тикеру');
-        return;
-    }
-
-    // Отображаем информацию на странице
-    document.getElementById('price').textContent = `Цена: ${stockData.price}`;
-    document.getElementById('change').textContent = `Изменение: ${stockData.change}`;
-    document.getElementById('news').textContent = `Новости: ${stockNews}`;
-
-    // Обновляем график
-    updateChart(stockData.timeSeries);
-
-    // Получаем прогноз (совет по акции)
-    const advice = getAdvice(stockData, stockNews);
-    document.getElementById('advice').querySelector('p').textContent = advice;
-});
-
-// Функция для получения данных о стоимости акций
-async function getStockData(ticker) {
-    const apiKey = 'B2OKB1P8E89ERAL9'; // Ваш API-ключ от Alpha Vantage
-    const url = `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${ticker}&interval=5min&apikey=${apiKey}`;
-
+async function getStockData() {
     try {
-        const response = await fetch(url);
+        const response = await fetch(`https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${stockSymbol}&interval=5min&apikey=${apiKey}`);
         const data = await response.json();
 
-        if (data['Time Series (5min)']) {
-            const latestData = data['Time Series (5min)'];
-            const timeSeries = Object.keys(latestData).map(time => ({
-                time: time,
-                price: parseFloat(latestData[time]['4. close'])
-            }));
-
-            return {
-                price: `$${timeSeries[timeSeries.length - 1].price}`,
-                change: calculateChange(timeSeries[timeSeries.length - 1].price),
-                timeSeries: timeSeries
-            };
-        } else {
-            throw new Error('Ошибка получения данных о акции');
+        if (data['Note']) {
+            throw new Error('Превышен лимит API. Попробуйте позже.');
         }
+
+        const timeSeries = data['Time Series (5min)'];
+        const times = Object.keys(timeSeries).sort();
+        const prices = times.map(time => parseFloat(timeSeries[time]['1. open']));
+
+        if (prices.length === 0) throw new Error('Нет данных для отображения.');
+
+        const latestPrice = prices[prices.length - 1];
+        if (!firstPrice) firstPrice = prices[0];
+
+        const change = latestPrice - firstPrice;
+        const changePercent = ((change / firstPrice) * 100).toFixed(2);
+
+        document.getElementById('stockPrice').textContent = `Цена: $${latestPrice.toFixed(2)}`;
+        document.getElementById('stockChange').textContent = `Изменение: ${change >= 0 ? '+' : ''}${change.toFixed(2)} (${changePercent}%)`;
+        document.getElementById('stockChange').style.color = change >= 0 ? 'green' : 'red';
+
+        updateChart(times, prices);
+        generateAdvice(changePercent);
+        fetchNews();
+
     } catch (error) {
-        console.error('Ошибка запроса:', error);
-        return { price: 'Ошибка', change: 'Ошибка', timeSeries: [] };
+        console.error('Ошибка при получении данных:', error.message);
+        document.getElementById('stockPrice').textContent = 'Ошибка загрузки данных';
+        document.getElementById('stockChange').textContent = '';
     }
 }
 
-// Функция для расчета изменения цены
-function calculateChange(price) {
-    const firstPrice = 150; // Пример стартовой цены (можно сделать динамичной)
-    const change = ((price - firstPrice) / firstPrice) * 100;
-    return `${change.toFixed(2)}%`;
+function updateChart(times, prices) {
+    if (stockChart) stockChart.destroy();
+    stockChart = new Chart(chart, {
+        type: 'line',
+        data: {
+            labels: times,
+            datasets: [{
+                label: `${stockSymbol} Цена`,
+                data: prices,
+                borderColor: '#28a745',
+                backgroundColor: 'rgba(40,167,69,0.1)',
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: { display: false },
+                y: { beginAtZero: false }
+            }
+        }
+    });
 }
 
-// Функция для получения новостей о компании
-async function getStockNews(ticker) {
-    return `Новости о компании ${ticker}...`;
+function generateAdvice(changePercent) {
+    const num = parseFloat(changePercent);
+    let advice;
+    if (num > 2) advice = 'Акция растёт — рассмотрите фиксацию прибыли.';
+    else if (num < -2) advice = 'Акция падает — возможен сигнал к покупке.';
+    else advice = 'Изменения незначительны — наблюдайте за рынком.';
+    document.getElementById('advice').textContent = `Совет: ${advice}`;
 }
 
-// Функция для рекомендаций на основе данных о стоимости акции
-function getAdvice(stockData, stockNews) {
-    if (parseFloat(stockData.change) > 0) {
-        return 'Рекомендуем покупать!';
-    } else {
+async function fetchNews() {
+    try {
+        const response = await fetch(`https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=${stockSymbol}&apikey=${apiKey}`);
+        const data = await response.json();
+
+        if (!data.feed || !Array.isArray(data.feed)) throw new Error('Нет новостей');
+
+        const newsHTML = data.feed.slice(0, 3).map(article => `
+            <p><a href="${article.url}" target="_blank">${article.title}</a></p>
+        `).join('');
+        document.getElementById('news').innerHTML = newsHTML;
+    } catch (error) {
+        document.getElementById('news').innerHTML = '<p>Не удалось загрузить новости.</p>';
+        console.error('Ошибка загрузки новостей:', error.message);
+    }
+}
+
+getStockData();
+setInterval(getStockData, 60 * 1000);
