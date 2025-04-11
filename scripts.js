@@ -1,4 +1,3 @@
-const apiKey = 'demo'; // Заменить на свой ключ
 const stockSymbol = 'AAPL';
 const chart = document.getElementById('stockChart').getContext('2d');
 let stockChart;
@@ -6,19 +5,20 @@ let firstPrice = null;
 
 async function getStockData() {
     try {
-        const response = await fetch(`https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${stockSymbol}&interval=5min&apikey=${apiKey}`);
+        // Получаем данные с Yahoo Finance через наш сервер
+        const response = await fetch(`http://localhost:3000/yahoo/${stockSymbol}`);
         const data = await response.json();
 
-        if (data['Note']) {
-            throw new Error('Превышен лимит API. Попробуйте позже.');
+        if (!data.chart || !data.chart.result || data.chart.result.length === 0) {
+            throw new Error('Нет данных от Yahoo Finance.');
         }
 
-        const timeSeries = data['Time Series (5min)'];
-        const times = Object.keys(timeSeries).sort();
-        const prices = times.map(time => parseFloat(timeSeries[time]['1. open']));
+        const timeSeries = data.chart.result[0].timestamp;
+        const prices = data.chart.result[0].indicators.quote[0].close;
 
-        if (prices.length === 0) throw new Error('Нет данных для отображения.');
+        if (!prices || prices.length === 0) throw new Error('Нет данных для отображения.');
 
+        const times = timeSeries.map(timestamp => new Date(timestamp * 1000).toLocaleTimeString());
         const latestPrice = prices[prices.length - 1];
         if (!firstPrice) firstPrice = prices[0];
 
@@ -32,11 +32,15 @@ async function getStockData() {
         updateChart(times, prices);
         generateAdvice(changePercent);
         fetchNews();
+        checkHalalStatus(stockSymbol);
 
     } catch (error) {
         console.error('Ошибка при получении данных:', error.message);
         document.getElementById('stockPrice').textContent = 'Ошибка загрузки данных';
         document.getElementById('stockChange').textContent = '';
+        document.getElementById('advice').textContent = '';
+        document.getElementById('news').innerHTML = '';
+        document.getElementById('halal').textContent = '';
     }
 }
 
@@ -76,7 +80,7 @@ function generateAdvice(changePercent) {
 
 async function fetchNews() {
     try {
-        const response = await fetch(`https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=${stockSymbol}&apikey=${apiKey}`);
+        const response = await fetch(`https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=${stockSymbol}&apikey=demo`);
         const data = await response.json();
 
         if (!data.feed || !Array.isArray(data.feed)) throw new Error('Нет новостей');
@@ -89,6 +93,14 @@ async function fetchNews() {
         document.getElementById('news').innerHTML = '<p>Не удалось загрузить новости.</p>';
         console.error('Ошибка загрузки новостей:', error.message);
     }
+}
+
+function checkHalalStatus(symbol) {
+    // Простейшая заглушка для халяльных акций
+    const haramList = ['BAC', 'KO', 'PEP', 'LVS'];
+    const halal = !haramList.includes(symbol.toUpperCase());
+    document.getElementById('halal').textContent = halal ? 'Халяльная акция ✅' : 'Харамная акция ❌';
+    document.getElementById('halal').style.color = halal ? 'green' : 'red';
 }
 
 getStockData();
