@@ -8,23 +8,23 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Stock Price and Analysis</h1>
+    <h1>📈 Stock Price and Analysis</h1>
     <div class="container">
         <label for="stock-ticker">Введите тикер акции:</label>
-        <input type="text" id="stock-ticker" placeholder="AAPL">
+        <input type="text" id="stock-ticker" placeholder="например, AAPL">
         <button id="get-analysis">Получить анализ</button>
 
-        <div id="results">
-            <p id="price">Цена: </p>
-            <p id="change">Изменение: </p>
-            <p id="news">Новости: </p>
+        <div id="results" style="display: none;">
+            <p id="price"></p>
+            <p id="change"></p>
+            <p id="news"></p>
         </div>
 
-        <div id="advice">
-            <p>Рекомендации: </p>
+        <div id="advice" style="display: none;">
+            <p></p>
         </div>
 
-        <canvas id="stock-chart" width="400" height="200"></canvas>
+        <canvas id="stock-chart"></canvas>
     </div>
 
     <script src="scripts.js"></script>
