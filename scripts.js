@@ -58,7 +58,7 @@ async function getStockData(ticker) {
 }
 
 async function getStockNews(ticker) {
-    const url = `https://newsapi.org/v2/everything?q=${ticker}&apiKey=68069bca283d4fb380e0a0a88e800e42 ;
+    const url = `https://newsapi.org/v2/everything?q=${ticker}&apiKey=68069bca283d4fb380e0a0a88e800e42`;
     const response = await fetch(url);
     const data = await response.json();
 
