@@ -74,7 +74,54 @@ function updateChart(stockData) {
     const times = stockData.time.map(time => new Date(time * 1000).toLocaleTimeString());
     const prices = stockData.prices;
 
+    // Удаляем старый график, если он существует
     if (stockChart) stockChart.destroy();
 
     const ctx = document.getElementById('stock-chart').getContext('2d');
-    stockChart = new Chart(ctx,
+    stockChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: times,
+            datasets: [{
+                label: 'Цена акций',
+                data: prices,
+                borderColor: '#4CAF50',
+                borderWidth: 2,
+                fill: false,
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Время'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Цена ($)'
+                    }
+                }
+            }
+        }
+    });
+}
+
+function getAdvice(stockData, stockNews) {
+    const changePercent = parseFloat(stockData.change);
+    let advice = 'Рекомендации: ';
+
+    if (changePercent > 0) {
+        advice += 'Акция растёт 📈 — можно рассмотреть покупку.';
+    } else if (changePercent < 0) {
+        advice += 'Акция падает 📉 — возможно стоит подождать с покупкой.';
+    } else {
+        advice += 'Акция стабильна 🔄 — ожидайте изменения.';
+    }
+
+    return advice;
+}
